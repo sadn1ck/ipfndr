@@ -7,44 +7,44 @@ import (
 	"strings"
 )
 
-func DecompressDomainName(buf *bytes.Buffer, len int) string {
+func DecompressDomainName(response []byte, offset *int, len int) string {
 	// val, _ := buf.ReadByte()
-	// var ptrBytes int = (len & 63) + int(val)
+	val := response[*offset]
+	*offset++
+	var ptrBytes int = (len & 63) + int(val)
+	currentOffset := *offset
+	*offset = ptrBytes
 
-	// current := buf.Cap() - buf.Len()
-	// log.Println("current ->", current)
-	// for i := 0; i < current; i++ {
-	// 	buf.UnreadByte()
-	// }
-	// log.Println("after unread", buf.Bytes())
-	// return ""
-	// result := DecodeDomainName(buf)
-	// return result
-	return ""
+	domain := DecodeDomainName(response, offset)
+	*offset = currentOffset // reset offset post usage
+	return domain
 }
 
-func DecodeDomainName(buf *bytes.Buffer) string {
+func DecodeDomainName(buf []byte, offset *int) string {
 	var parts []string
-	c, _ := buf.ReadByte()
+	c := buf[*offset]
+	*offset++
 	for c != 0 {
 		if c&192 != 0 {
-			part := DecompressDomainName(buf, int(c))
-			log.Println("part decomp->", part)
+			part := DecompressDomainName(buf, offset, int(c))
 			parts = append(parts, part)
 			break
 		} else {
-			var part []byte = buf.Next(int(c))
+			var part []byte = buf[*offset : *offset+int(c)]
 			parts = append(parts, string(part))
-			c, _ = buf.ReadByte()
+			*offset += int(c)
+			c = buf[*offset]
+			*offset++
 		}
 	}
 	return strings.Join(parts, ".")
 }
 
 // 🟢
-func ParseResponseHeaders(buf *bytes.Buffer) DNSHeader {
+func ParseResponseHeaders(buf []byte, offset *int) DNSHeader {
 	var header DNSHeader
-	data := buf.Next(12)
+	data := buf[:12]
+	*offset += 12
 	err := binary.Read(bytes.NewBuffer(data), binary.BigEndian, &header)
 	if err != nil {
 		log.Fatalln("brother binary read error ->", err)
@@ -53,26 +53,28 @@ func ParseResponseHeaders(buf *bytes.Buffer) DNSHeader {
 }
 
 // 🟢
-func ParseResponseQuestion(buf *bytes.Buffer) DNSQuestion {
+func ParseResponseQuestion(buf []byte, offset *int) DNSQuestion {
 	var q DNSQuestion
-	q.QName = []byte(DecodeDomainName(buf))
-	binary.Read(buf, binary.BigEndian, &q.QType)
-	binary.Read(buf, binary.BigEndian, &q.QClass)
+	q.QName = []byte(DecodeDomainName(buf, offset))
+	data := buf[*offset : *offset+4]
+	*offset += 4
+	q.QType = binary.BigEndian.Uint16(data[:2])
+	q.QClass = binary.BigEndian.Uint16(data[2:4])
 	return q
 }
 
 // 🔴
-func ParseResponseRecord(buf *bytes.Buffer) DNSRecord {
-	log.Println("buf for record ->", buf.Bytes())
+func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	var record DNSRecord
-	record.Name = []byte(DecodeDomainName(buf))
-	// data := buf.Next(10)
-	// binary.Read(bytes.NewBuffer(data), binary.BigEndian, &record.RecordType)
-	// binary.Read(bytes.NewBuffer(data), binary.BigEndian, &record.ClassType)
-	// binary.Read(bytes.NewBuffer(data), binary.BigEndian, &record.Ttl)
-	// var dataLen byte
-	// binary.Read(buf, binary.BigEndian, &dataLen)
-	// record.Data = buf.Next(int(dataLen))
-	// log.Println("type ->", record.RecordType, "class ->", record.ClassType, "ttl ->", record.Ttl, "data ->", record.Data)
+	record.Name = []byte(DecodeDomainName(buf, offset))
+	data := buf[*offset : *offset+10]
+	*offset += 10
+	record.RecordType = binary.BigEndian.Uint16(data[:2])
+	record.ClassType = binary.BigEndian.Uint16(data[2:4])
+	ttl := binary.BigEndian.Uint32(data[4:8])
+	record.Ttl = int(ttl)
+	dataLen := binary.BigEndian.Uint16(data[8:10])
+	record.Data = buf[*offset : *offset+int(dataLen)]
+	*offset += int(dataLen)
 	return record
 }

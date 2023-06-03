@@ -1,29 +1,27 @@
 package main
 
 import (
-	"bytes"
 	"log"
 )
 
 func main() {
 	// todo: error handling for send/build query
-	response, err := SendQuery(BuildQuery("chroniclehq.com", TYPE_A))
+	buf, err := SendQuery(BuildQuery("chroniclehq.com", TYPE_A))
 	if err != nil {
 		log.Fatalln(err)
 	} else {
-		buf := bytes.NewBuffer(response)
-		log.Println("response length-> ", buf.Cap())
-		log.Println("response -> ", buf.Bytes())
+		var offset int = 0
+		log.Println(buf)
 		// header := ParseResponseHeaders(buf)
-		ParseResponseHeaders(buf)
-		// log.Println("header -> ", header)
+		ParseResponseHeaders(buf, &offset)
+		log.Println("offset: ", offset)
 
 		// saved := buf.Bytes()
 		// question := ParseResponseQuestion(buf)
-		ParseResponseQuestion(buf)
-		// log.Println("question -> ", question.QName)
+		ParseResponseQuestion(buf, &offset)
+		log.Println("offset: ", offset)
 		// record := ParseResponseRecord(buf)
-		ParseResponseRecord(buf)
-		// log.Println("response record -> ", record)
+		ParseResponseRecord(buf, &offset)
+		log.Println("offset: ", offset)
 	}
 }
