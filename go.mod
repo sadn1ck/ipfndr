@@ -1,3 +1,3 @@
-module github.com/sadn1ck/dns-resolver
+module github.com/sadn1ck/godns
 
 go 1.20
