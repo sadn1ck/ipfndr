@@ -63,7 +63,7 @@ func ParseResponseQuestion(buf []byte, offset *int) DNSQuestion {
 	return q
 }
 
-// 🔴
+// 🟢
 func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	var record DNSRecord
 	record.Name = []byte(DecodeDomainName(buf, offset))
@@ -77,4 +77,23 @@ func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	record.Data = buf[*offset : *offset+int(dataLen)]
 	*offset += int(dataLen)
 	return record
+}
+
+func ParseDNSPacket(buf []byte) DNSPacket {
+	var packet DNSPacket
+	var offset int = 0
+	packet.Header = ParseResponseHeaders(buf, &offset)
+	for i := 0; i < int(packet.Header.QuestionCount); i++ {
+		packet.Questions = append(packet.Questions, ParseResponseQuestion(buf, &offset))
+	}
+	for i := 0; i < int(packet.Header.AnswerCount); i++ {
+		packet.Answers = append(packet.Answers, ParseResponseRecord(buf, &offset))
+	}
+	for i := 0; i < int(packet.Header.NsCount); i++ {
+		packet.Authorities = append(packet.Authorities, ParseResponseRecord(buf, &offset))
+	}
+	for i := 0; i < int(packet.Header.ARCount); i++ {
+		packet.Additional = append(packet.Additional, ParseResponseRecord(buf, &offset))
+	}
+	return packet
 }

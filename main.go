@@ -1,27 +1,30 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"log"
+	"os"
+	"strings"
 )
 
 func main() {
-	// todo: error handling for send/build query
-	buf, err := SendQuery(BuildQuery("chroniclehq.com", TYPE_A))
+	fmt.Print("Enter domain: ")
+	reader := bufio.NewReader(os.Stdin)
+	// ReadString will block until the delimiter is entered
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("An error occured while reading input. Please try again", err)
+		return
+	}
+
+	// remove the delimeter from the string
+	input = strings.TrimSuffix(input, "\n")
+	buf, err := SendQuery(BuildQuery(input, TYPE_A))
 	if err != nil {
 		log.Fatalln(err)
 	} else {
-		var offset int = 0
-		log.Println(buf)
-		// header := ParseResponseHeaders(buf)
-		ParseResponseHeaders(buf, &offset)
-		log.Println("offset: ", offset)
-
-		// saved := buf.Bytes()
-		// question := ParseResponseQuestion(buf)
-		ParseResponseQuestion(buf, &offset)
-		log.Println("offset: ", offset)
-		// record := ParseResponseRecord(buf)
-		ParseResponseRecord(buf, &offset)
-		log.Println("offset: ", offset)
+		packet := ParseDNSPacket(buf)
+		fmt.Println("IP: ", DataToIP(packet.Answers[0].Data))
 	}
 }

@@ -25,3 +25,11 @@ type DNSRecord struct {
 	Ttl        int
 	Data       []byte
 }
+
+type DNSPacket struct {
+	Header      DNSHeader
+	Questions   []DNSQuestion
+	Answers     []DNSRecord
+	Authorities []DNSRecord
+	Additional  []DNSRecord
+}
