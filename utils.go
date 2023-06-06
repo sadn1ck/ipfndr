@@ -7,7 +7,7 @@ import (
 
 // is it even a project without a utils file?
 
-func DataToIP(data []byte) string {
+func DataToIp(data []byte) string {
 	parts := [4]string{}
 	for i := 0; i < 4; i++ {
 		parts[i] = strconv.Itoa(int(data[i]))

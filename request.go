@@ -3,23 +3,21 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"math/rand"
 	"net"
 	"strings"
 )
 
-func BuildQuery(domain string, recordType uint16) []byte {
+func BuildQuery(domain string, recordType uint16, nameserver string) DNSPacket {
 	encodedDomain := EncodeDomainName(domain)
-	var RECURSION_DESIRED uint16 = 1 << 8
 	id := uint16(rand.Intn(65535)) //0x8298
 	header := DNSHeader{
-		Id:            id,
-		QuestionCount: 1,
-		Flags:         RECURSION_DESIRED,
-		AnswerCount:   0,
-		NsCount:       0,
-		ARCount:       0,
+		Id:             id,
+		QuestionCount:  1,
+		Flags:          0,
+		AnswerCount:    0,
+		AuthorityCount: 0,
+		AddnCount:      0,
 	}
 
 	question := DNSQuestion{
@@ -28,30 +26,25 @@ func BuildQuery(domain string, recordType uint16) []byte {
 		QClass: CLASS_IN,
 	}
 
-	// log.Print("request header -> ", header)
 	headerByteString := HeaderToBytes(header)
 	questionByteString := QuestionToBytes(question)
 	query := append(headerByteString, questionByteString...)
-	return query
-
+	packet, _ := SendQueryToNS(query, nameserver)
+	return packet
 }
 
-func SendQuery(query []byte) ([]byte, error) {
-	conn, err := net.Dial("udp", "8.8.8.8:53")
-	if err != nil {
-		log.Fatalln(err)
-		return []byte{}, err
-	}
+func SendQueryToNS(query []byte, dnsServerIp string) (DNSPacket, error) {
+	var dnsIpPort string = dnsServerIp + ":53"
+	conn, _ := net.Dial("udp", dnsIpPort)
 	conn.Write(query)
+	// read into 1024 byte buffer
 	res := make([]byte, 1024)
-	n, err := conn.Read(res)
+	n, _ := conn.Read(res)
+	// copy response into new fixed size byte array
 	response := make([]byte, n)
 	copy(response, res)
-	if err != nil {
-		log.Fatalln(err)
-		return []byte{}, err
-	}
-	return response, nil
+	// directly return response
+	return ParseDNSPacket(response), nil
 }
 
 // converts header to byte string in big endian

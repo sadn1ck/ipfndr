@@ -40,7 +40,6 @@ func DecodeDomainName(buf []byte, offset *int) string {
 	return strings.Join(parts, ".")
 }
 
-// 🟢
 func ParseResponseHeaders(buf []byte, offset *int) DNSHeader {
 	var header DNSHeader
 	data := buf[:12]
@@ -52,7 +51,6 @@ func ParseResponseHeaders(buf []byte, offset *int) DNSHeader {
 	return header
 }
 
-// 🟢
 func ParseResponseQuestion(buf []byte, offset *int) DNSQuestion {
 	var q DNSQuestion
 	q.QName = []byte(DecodeDomainName(buf, offset))
@@ -63,7 +61,6 @@ func ParseResponseQuestion(buf []byte, offset *int) DNSQuestion {
 	return q
 }
 
-// 🟢
 func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	var record DNSRecord
 	record.Name = []byte(DecodeDomainName(buf, offset))
@@ -74,8 +71,21 @@ func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	ttl := binary.BigEndian.Uint32(data[4:8])
 	record.Ttl = int(ttl)
 	dataLen := binary.BigEndian.Uint16(data[8:10])
-	record.Data = buf[*offset : *offset+int(dataLen)]
-	*offset += int(dataLen)
+
+	if record.RecordType == TYPE_NS {
+		if len(string(record.Data)) > 0 {
+			log.Println("NS record ->", record.Data, string(record.Data))
+		}
+		record.Data = []byte(DecodeDomainName(buf, offset))
+	} else if record.RecordType == TYPE_A {
+		record.Data = buf[*offset : *offset+int(dataLen)]
+		*offset += int(dataLen)
+		// log.Println("A record ->", record.Data, DataToIp(record.Data))
+	} else {
+		record.Data = buf[*offset : *offset+int(dataLen)]
+		*offset += int(dataLen)
+		// log.Println("other record ->", record.Data, string(record.Data))
+	}
 	return record
 }
 
@@ -86,14 +96,16 @@ func ParseDNSPacket(buf []byte) DNSPacket {
 	for i := 0; i < int(packet.Header.QuestionCount); i++ {
 		packet.Questions = append(packet.Questions, ParseResponseQuestion(buf, &offset))
 	}
-	for i := 0; i < int(packet.Header.AnswerCount); i++ {
-		packet.Answers = append(packet.Answers, ParseResponseRecord(buf, &offset))
+	var savedOffset int = offset
+	var i uint16
+	for i = 0; i < packet.Header.AnswerCount; i++ {
+		packet.Answers = append(packet.Answers, ParseResponseRecord(buf, &savedOffset))
 	}
-	for i := 0; i < int(packet.Header.NsCount); i++ {
-		packet.Authorities = append(packet.Authorities, ParseResponseRecord(buf, &offset))
+	for i = 0; i < packet.Header.AuthorityCount; i++ {
+		packet.Authorities = append(packet.Authorities, ParseResponseRecord(buf, &savedOffset))
 	}
-	for i := 0; i < int(packet.Header.ARCount); i++ {
-		packet.Additional = append(packet.Additional, ParseResponseRecord(buf, &offset))
+	for i = 0; i < packet.Header.AddnCount; i++ {
+		packet.Additional = append(packet.Additional, ParseResponseRecord(buf, &savedOffset))
 	}
 	return packet
 }

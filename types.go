@@ -1,15 +1,26 @@
 package main
 
-const TYPE_A = 1
-const CLASS_IN = 1
+const (
+	TYPE_A     = 1
+	TYPE_NS    = 2
+	TYPE_CNAME = 5
+	TYPE_SOA   = 6
+	TYPE_PTR   = 12
+	TYPE_MX    = 15
+	TYPE_TXT   = 16
+	TYPE_AAAA  = 28
+	TYPE_SRV   = 33
+	//
+	CLASS_IN = 1
+)
 
 type DNSHeader struct {
-	Id            uint16
-	Flags         uint16
-	QuestionCount uint16
-	AnswerCount   uint16
-	NsCount       uint16 // name server records count
-	ARCount       uint16 // additional records
+	Id             uint16
+	Flags          uint16
+	QuestionCount  uint16
+	AnswerCount    uint16
+	AuthorityCount uint16 // name server records count
+	AddnCount      uint16 // additional records
 }
 
 type DNSQuestion struct {
