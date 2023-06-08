@@ -42,17 +42,29 @@ func GetNameServer(packet DNSPacket) string {
 	return res
 }
 
+func GetCname(packet DNSPacket) string {
+	for _, answer := range packet.Answers {
+		if answer.RecordType == TYPE_CNAME {
+			return string(answer.Data)
+		}
+	}
+	return ""
+}
+
 func Resolve(domain string, record int) string {
 	nameserver := "198.41.0.4" // e.root-servers.net
 	ip := ""
 	nsIp := ""
 	nsDomain := ""
+	cName := ""
 	for {
 		log.Println("Querying", nameserver, "for", domain)
 		packet := BuildQuery(domain, TYPE_A, nameserver)
 		ip = GetAnswers(packet)
 		nsIp = GetNameserverIp(packet)
 		nsDomain = GetNameServer(packet)
+		cName = GetCname(packet)
+		// log.Println("ip", ip, "nsIp", nsIp, "nsDomain", nsDomain, "cName", cName)
 		if len(ip) > 0 {
 			// base case
 			return string(ip)
@@ -60,6 +72,9 @@ func Resolve(domain string, record int) string {
 			nameserver = nsIp
 		} else if len(nsDomain) > 0 {
 			nameserver = Resolve(nsDomain, TYPE_A)
+		} else if len(cName) > 0 {
+			domain = cName
+			return Resolve(domain, TYPE_CNAME)
 		} else {
 			log.Fatalln("No nameserver found")
 		}

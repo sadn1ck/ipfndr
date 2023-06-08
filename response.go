@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/binary"
 	"log"
 	"strings"
@@ -43,11 +42,17 @@ func DecodeDomainName(buf []byte, offset *int) string {
 func ParseResponseHeaders(buf []byte, offset *int) DNSHeader {
 	var header DNSHeader
 	data := buf[:12]
+	header.Id = binary.BigEndian.Uint16(data[:2])
+	header.Flags = binary.BigEndian.Uint16(data[2:4])
+	header.QuestionCount = binary.BigEndian.Uint16(data[4:6])
+	header.AnswerCount = binary.BigEndian.Uint16(data[6:8])
+	header.AuthorityCount = binary.BigEndian.Uint16(data[8:10])
+	header.AddnCount = binary.BigEndian.Uint16(data[10:12])
+	// err := binary.Read(bytes.NewBuffer(data), binary.BigEndian, &header)
+	// if err != nil {
+	// 	log.Fatalln("brother binary read error ->", err)
+	// }
 	*offset += 12
-	err := binary.Read(bytes.NewBuffer(data), binary.BigEndian, &header)
-	if err != nil {
-		log.Fatalln("brother binary read error ->", err)
-	}
 	return header
 }
 
@@ -80,7 +85,9 @@ func ParseResponseRecord(buf []byte, offset *int) DNSRecord {
 	} else if record.RecordType == TYPE_A {
 		record.Data = buf[*offset : *offset+int(dataLen)]
 		*offset += int(dataLen)
-		// log.Println("A record ->", record.Data, DataToIp(record.Data))
+	} else if record.RecordType == TYPE_CNAME {
+		record.Data = []byte(DecodeDomainName(buf, offset))
+		*offset += int(dataLen)
 	} else {
 		record.Data = buf[*offset : *offset+int(dataLen)]
 		*offset += int(dataLen)

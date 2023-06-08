@@ -16,5 +16,8 @@ func main() {
 	// input = strings.TrimSuffix(input, "\n")
 	fmt.Println("Resolved IP for anikd.com:", Resolve("anikd.com", TYPE_A))
 	fmt.Println("-----")
-	fmt.Println("Resolved IP for arnabsen.dev:", Resolve("arnabsen.dev", TYPE_A))
+	fmt.Println("Resolved IP for www.arnabsen.dev:", Resolve("www.arnabsen.dev", TYPE_A))
+	fmt.Println("-----")
+	fmt.Println("Resolved IP for www.facebook.com:", Resolve("www.facebook.com", TYPE_A))
+	fmt.Println("-----")
 }
