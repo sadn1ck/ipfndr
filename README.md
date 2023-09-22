@@ -1,18 +1,25 @@
-# godns
+# ipfndr
 
-absolutely terrible (incomplete as well) implementation of dns resolving, following [Julia Evan's tutorial](https://implement-dns.wizardzines.com/index.html)
+simple implementation of dns resolving, following [Julia Evan's tutorial](https://implement-dns.wizardzines.com/index.html)
 
-## why lol
+given a domain, finds the IP address of the domain using dns resolution. the dns resolution is written from scratch, and is slightly hacky.
 
-- Learning go
-- Wanted to write some code
-- Writing go
-- DNS is fun
-- Implementing real life stuff
-- DNS is not fun
-- Might as well use an array + offset innit
+starting at a root server, it does recursive dns resolving, till an IP address is resolved.
 
-## todo
+![sample run of ipfndr](./docs/sample.png)
+
+# using
+
+```bash
+# clone this repo
+
+go run .
+
+# enter name
+
+```
+
+## todo (sometime™, contribs welcome)
 
 ### general
 

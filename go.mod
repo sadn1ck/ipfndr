@@ -1,3 +1,3 @@
-module github.com/sadn1ck/godns
+module github.com/sadn1ck/ipfndr
 
 go 1.20
